@@ -1,1 +1,5 @@
+MetaTrader5
+pandas
+numpy
+python-dotenv
 
