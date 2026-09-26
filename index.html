@@ -1,1 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>XAUUSDm Management Console</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <header class="topbar">
+
+    <div>
+      <div class="eyebrow">TRADING OPERATIONS</div>
+
+      <h1>Management Console</h1>
+
+      <p>Monitor clients, bots and XAUUSDm performance.</p>
+    </div>
+
+    <div class="system-status">
+      ● SYSTEM ONLINE
+    </div>
+
+  </header>
+
+
+  <main>
+
+    <!-- ACCOUNT CONTROL -->
+
+    <section class="card account-control">
+
+      <div>
+        <div class="eyebrow">CLIENT CONTROL</div>
+
+        <h2>Account Management</h2>
+
+        <p>
+          Manage client accounts and select their service level.
+        </p>
+      </div>
+
+      <select id="accountType">
+
+        <option value="Basic">Basic</option>
+
+        <option value="Pro" selected>Pro</option>
+
+        <option value="Premium">Premium</option>
+
+      </select>
+
+    </section>
+
+
+    <!-- STATISTICS -->
+
+    <section class="stats-grid">
+
+      <div class="card stat-card">
+
+        <span>Clients</span>
+
+        <strong>12</strong>
+
+        <small>Active accounts</small>
+
+      </div>
+
+
+      <div class="card stat-card">
+
+        <span>Bots Running</span>
+
+        <strong>10</strong>
+
+        <small>2 disconnected</small>
+
+      </div>
+
+
+      <div class="card stat-card">
+
+        <span>Today's P/L</span>
+
+        <strong>+$184.20</strong>
+
+        <small>All active clients</small>
+
+      </div>
+
+
+      <div class="card stat-card">
+
+        <span>MT5 Health</span>
+
+        <strong>98%</strong>
+
+        <small>Connection status</small>
+
+      </div>
+
+    </section>
+
+
+    <!-- BOT STATUS -->
+
+    <section class="two-column">
+
+
+      <div class="card">
+
+        <div class="section-header">
+
+          <div>
+
+            <div class="eyebrow">BOT HEALTH</div>
+
+            <h2>Live Status</h2>
+
+          </div>
+
+          <span class="running">
+            RUNNING
+          </span>
+
+        </div>
+
+
+        <div class="health-list">
+
+          <div>
+            <span>MT5 Connection</span>
+            <strong>Connected</strong>
+          </div>
+
+          <div>
+            <span>PC/VPS Heartbeat</span>
+            <strong>Healthy</strong>
+          </div>
+
+          <div>
+            <span>XAUUSDm Bot</span>
+            <strong>Running</strong>
+          </div>
+
+          <div>
+            <span>Last Activity</span>
+            <strong>Just now</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- SIGNAL -->
+
+      <div class="card">
+
+        <div class="section-header">
+
+          <div>
+
+            <div class="eyebrow">LATEST SIGNAL</div>
+
+            <h2>XAUUSDm</h2>
+
+          </div>
+
+          <span class="buy">
+            BUY
+          </span>
+
+        </div>
+
+
+        <div class="signal-box">
+
+          <h3>Fibonacci Setup</h3>
+
+          <p>
+            Entry:
+            <strong>4,120.50</strong>
+          </p>
+
+          <p>
+            Stop Loss:
+            <strong>4,100.50</strong>
+          </p>
+
+          <p>
+            Take Profit:
+            <strong>4,160.50</strong>
+          </p>
+
+          <small>
+            Confirmation: Closed M15 candle
+          </small>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- CLIENT TABLE -->
+
+    <section class="card">
+
+      <div class="section-header">
+
+        <div>
+
+          <div class="eyebrow">CLIENTS</div>
+
+          <h2>Client Accounts</h2>
+
+        </div>
+
+        <button id="refreshButton">
+          Refresh
+        </button>
+
+      </div>
+
+
+      <div class="table-container">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Client</th>
+
+              <th>MT5 Account</th>
+
+              <th>Account Type</th>
+
+              <th>Bot</th>
+
+              <th>Connection</th>
+
+              <th>P/L</th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="clientTable">
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- PERFORMANCE -->
+
+    <section class="two-column">
+
+
+      <div class="card">
+
+        <div class="eyebrow">
+          WEEKLY PERFORMANCE
+        </div>
+
+        <h2>Weekly P/L</h2>
+
+        <div
+          class="chart"
+          id="weeklyChart">
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="eyebrow">
+          MONTHLY PERFORMANCE
+        </div>
+
+        <h2>Monthly P/L</h2>
+
+        <div
+          class="chart"
+          id="monthlyChart">
+        </div>
+
+      </div>
+
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    XAUUSDm Management Console
+
+    <br>
+
+    Demo interface only.
+    Never store MT5 passwords or API secrets in GitHub.
+
+  </footer>
+
+
+  <script src="app.js"></script>
+
+</body>
+
+</html>
