@@ -1,1 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+.env
+
+# Secrets and credentials
+*.key
+*.pem
+secrets.json
+credentials.json
+config.json
+
+# MT5
+*.ex5
+*.ex4
+
+# Logs
+*.log
+logs/
+
+# Local data
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
 
