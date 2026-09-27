@@ -6,7 +6,12 @@ from config import (
     SYMBOL,
     MAGIC_NUMBER,
     DEVIATION,
+    RISK_PER_TRADE,
+    SL_POINTS,
 )
+
+from lot_manager import calculate_lot
+from risk_manager import validate_risk
 
 
 def make_setup_id(setup_key):
@@ -88,6 +93,19 @@ def place_order(
             f"Could not retrieve {SYMBOL} price."
         )
 
+    point = float(
+        symbol_info.point
+    )
+
+    if point <= 0:
+        raise ValueError(
+            "Invalid MT5 point size."
+        )
+
+    sl_distance = (
+        SL_POINTS * point
+    )
+
     if direction == "BUY":
 
         execution_price = float(
@@ -96,16 +114,17 @@ def place_order(
 
         order_type = mt5.ORDER_TYPE_BUY
 
-        if stop_loss >= execution_price:
-            raise ValueError(
-                "BUY rejected: stop-loss "
-                "must be below execution price."
-            )
+        actual_stop_loss = (
+            execution_price
+            - sl_distance
+        )
 
         if take_profit <= execution_price:
+
             raise ValueError(
                 "BUY rejected: take-profit "
-                "must be above execution price."
+                "is no longer above the "
+                "actual execution price."
             )
 
     else:
@@ -116,17 +135,50 @@ def place_order(
 
         order_type = mt5.ORDER_TYPE_SELL
 
-        if stop_loss <= execution_price:
-            raise ValueError(
-                "SELL rejected: stop-loss "
-                "must be above execution price."
-            )
+        actual_stop_loss = (
+            execution_price
+            + sl_distance
+        )
 
         if take_profit >= execution_price:
+
             raise ValueError(
                 "SELL rejected: take-profit "
-                "must be below execution price."
+                "is no longer below the "
+                "actual execution price."
             )
+
+    actual_lot = calculate_lot(
+        SYMBOL,
+        execution_price,
+        actual_stop_loss
+    )
+
+    tick_size = float(
+        symbol_info.trade_tick_size
+    )
+
+    tick_value = float(
+        symbol_info.trade_tick_value
+    )
+
+    actual_risk = validate_risk(
+        execution_price,
+        actual_stop_loss,
+        actual_lot,
+        tick_size,
+        tick_value
+    )
+
+    if actual_risk > float(
+        RISK_PER_TRADE
+    ) + 0.01:
+
+        raise ValueError(
+            f"Trade blocked: actual risk "
+            f"${actual_risk:.2f} exceeds "
+            f"${RISK_PER_TRADE:.2f}."
+        )
 
     setup_id = make_setup_id(
         setup_key
@@ -135,10 +187,10 @@ def place_order(
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": SYMBOL,
-        "volume": float(lot),
+        "volume": float(actual_lot),
         "type": order_type,
         "price": execution_price,
-        "sl": float(stop_loss),
+        "sl": float(actual_stop_loss),
         "tp": float(take_profit),
         "deviation": DEVIATION,
         "magic": MAGIC_NUMBER,
@@ -152,6 +204,7 @@ def place_order(
     )
 
     if result is None:
+
         raise RuntimeError(
             f"Order send failed: "
             f"{mt5.last_error()}"
@@ -171,10 +224,12 @@ def place_order(
     print("==============================")
     print("Symbol:", SYMBOL)
     print("Direction:", direction)
-    print("Lot:", lot)
+    print("Lot:", actual_lot)
     print("Execution price:", execution_price)
-    print("Stop loss:", stop_loss)
+    print("Stop loss:", actual_stop_loss)
     print("Take profit:", take_profit)
+    print("SL points:", SL_POINTS)
+    print("Risk:", actual_risk)
     print("Setup ID:", setup_id)
     print("Ticket:", result.order)
     print("==============================")
