@@ -14,7 +14,8 @@ def get_candles(timeframe, count=500):
 
     if rates is None or len(rates) == 0:
         raise RuntimeError(
-            f"Could not retrieve {SYMBOL} candles: {mt5.last_error()}"
+            f"Could not retrieve {SYMBOL} candles: "
+            f"{mt5.last_error()}"
         )
 
     df = pd.DataFrame(rates)
@@ -28,13 +29,44 @@ def get_candles(timeframe, count=500):
     return df
 
 
+def get_completed_h12_candle():
+    """
+    Return the most recent COMPLETED H12 candle.
+
+    The currently forming H12 candle is excluded.
+    """
+
+    df = get_candles(
+        mt5.TIMEFRAME_H12,
+        3
+    )
+
+    if len(df) < 2:
+        raise RuntimeError(
+            "Not enough H12 candles available."
+        )
+
+    # MT5 includes the currently forming candle
+    # at the end of the returned data.
+    return df.iloc[-2].copy()
+
+
 def get_h12_data(count=500):
-    return get_candles(mt5.TIMEFRAME_H12, count)
+    return get_candles(
+        mt5.TIMEFRAME_H12,
+        count
+    )
 
 
 def get_m15_data(count=500):
-    return get_candles(mt5.TIMEFRAME_M15, count)
+    return get_candles(
+        mt5.TIMEFRAME_M15,
+        count
+    )
 
 
 def get_m5_data(count=500):
-    return get_candles(mt5.TIMEFRAME_M5, count)
+    return get_candles(
+        mt5.TIMEFRAME_M5,
+        count
+    )
