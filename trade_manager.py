@@ -18,11 +18,6 @@ def prepare_trade(
     entry_level_name,
     fib_levels
 ):
-    """
-    Build and validate a trade before execution.
-
-    No order is sent by this function.
-    """
 
     if direction not in ("BUY", "SELL"):
         raise ValueError(
@@ -36,7 +31,6 @@ def prepare_trade(
             f"{SYMBOL} not found in MT5."
         )
 
-    # Calculate a lot size that stays within $20 risk.
     lot = calculate_lot(
         SYMBOL,
         entry_price,
@@ -51,7 +45,6 @@ def prepare_trade(
         symbol_info.trade_tick_value
     )
 
-    # Calculate actual monetary risk.
     risk = validate_risk(
         entry_price,
         stop_loss,
@@ -60,14 +53,12 @@ def prepare_trade(
         tick_value
     )
 
-    # Calculate TP from the Fibonacci system.
     take_profit = get_tp_level(
         direction,
         entry_level_name,
         fib_levels
     )
 
-    # Final safety gate.
     approve_trade(
         SYMBOL,
         direction,
@@ -77,7 +68,6 @@ def prepare_trade(
         take_profit
     )
 
-    # Extra hard check.
     if risk > MAX_RISK_USD + 0.01:
         raise ValueError(
             f"Trade blocked: risk "
@@ -98,9 +88,6 @@ def prepare_trade(
 
 
 def execute_trade(trade):
-    """
-    Execute an already validated trade.
-    """
 
     required_fields = (
         "symbol",
@@ -113,6 +100,7 @@ def execute_trade(trade):
     )
 
     for field in required_fields:
+
         if field not in trade:
             raise ValueError(
                 f"Trade is missing required field: "
