@@ -3,6 +3,62 @@ import MetaTrader5 as mt5
 from config import SYMBOL, MAGIC_NUMBER, DEVIATION
 
 
+def make_setup_id(setup_key):
+    parts = str(setup_key).split("|")
+
+    if len(parts) != 4:
+        raise ValueError(
+            "Invalid setup key."
+        )
+
+    h12_time = parts[0]
+    m15_time = parts[1]
+    level = parts[2]
+    direction = parts[3]
+
+    h12_compact = (
+        h12_time.replace("-", "")
+        .replace(":", "")
+        .replace(" ", "")
+    )
+
+    m15_compact = (
+        m15_time.replace("-", "")
+        .replace(":", "")
+        .replace(" ", "")
+    )
+
+    level_code = {
+        "23.6": "236",
+        "38.2": "382",
+        "50.0": "500",
+        "61.8": "618",
+    }.get(level)
+
+    if level_code is None:
+        raise ValueError(
+            "Invalid Fibonacci entry level."
+        )
+
+    direction_code = {
+        "BUY": "B",
+        "SELL": "S",
+    }.get(direction)
+
+    if direction_code is None:
+        raise ValueError(
+            "Invalid trade direction."
+        )
+
+    return (
+        "XAU"
+        + h12_compact[-8:]
+        + m15_compact[-8:]
+        + level_code
+        + direction_code
+    )
+
+
 def place_order(
     direction,
     lot,
@@ -100,10 +156,9 @@ def place_order(
                 "be below current market price."
             )
 
-    comment = (
-        "XAUUSDm Fibonacci Bot | "
-        + str(setup_key)
-    )
+    setup_id = make_setup_id(setup_key)
+
+    comment = setup_id
 
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -142,6 +197,6 @@ def place_order(
     print("Entry:", market_price)
     print("Stop Loss:", stop_loss)
     print("Take Profit:", take_profit)
-    print("Setup:", setup_key)
+    print("Setup ID:", setup_id)
 
     return result
