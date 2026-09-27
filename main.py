@@ -126,6 +126,10 @@ def process_m15_candle(
         m15_candle["time"]
     )
 
+    candle_open = float(
+        m15_candle["open"]
+    )
+
     candle_high = float(
         m15_candle["high"]
     )
@@ -134,11 +138,17 @@ def process_m15_candle(
         m15_candle["low"]
     )
 
+    candle_close = float(
+        m15_candle["close"]
+    )
+
     signals = build_signals(
         h12_high,
         h12_low,
+        candle_open,
         candle_high,
-        candle_low
+        candle_low,
+        candle_close
     )
 
     if not signals:
@@ -212,4 +222,173 @@ def process_m15_candle(
         print("Symbol:", SYMBOL)
         print("Direction:", direction)
         print("Entry level:", level)
-        print("
+        print("Signal entry:", entry)
+        print("Stop loss:", stop_loss)
+        print("Setup ID:", setup_id)
+
+        try:
+
+            trade = prepare_trade(
+                direction,
+                entry,
+                stop_loss,
+                level,
+                fib_levels
+            )
+
+            print(
+                "Lot:",
+                trade["lot"]
+            )
+
+            print(
+                "Take profit:",
+                trade["take_profit"]
+            )
+
+            print(
+                "Risk:",
+                trade["risk"]
+            )
+
+            if not AUTO_EXECUTION:
+
+                print(
+                    "AUTO EXECUTION DISABLED - "
+                    "signal not sent."
+                )
+
+                continue
+
+            result = execute_trade(
+                trade,
+                setup_key
+            )
+
+            if result is not None:
+
+                processed_setups.add(
+                    setup_id
+                )
+
+                print(
+                    "SETUP EXECUTED:",
+                    setup_id
+                )
+
+        except Exception as trade_error:
+
+            print(
+                "TRADE REJECTED:",
+                trade_error
+            )
+
+
+def main():
+
+    processed_setups = set()
+
+    try:
+
+        account = connect_mt5()
+
+        check_mt5_symbol()
+
+        print_bot_status(account)
+
+        print(
+            "BOT RUNNING - "
+            "automatic signal monitoring active"
+        )
+
+        while True:
+
+            terminal = mt5.terminal_info()
+
+            if terminal is None:
+                raise RuntimeError(
+                    "MT5 terminal connection lost."
+                )
+
+            current_account = (
+                mt5.account_info()
+            )
+
+            if current_account is None:
+                raise RuntimeError(
+                    "MT5 account connection lost."
+                )
+
+            check_mt5_symbol()
+
+            h12_candle = (
+                get_completed_h12_candle()
+            )
+
+            h12_time = (
+                h12_candle["time"]
+            )
+
+            m15_data = get_m15_data(100)
+
+            if m15_data.empty:
+
+                print(
+                    "No M15 data available."
+                )
+
+                time.sleep(
+                    LOOP_SECONDS
+                )
+
+                continue
+
+            completed_m15 = (
+                m15_data.iloc[:-1]
+            )
+
+            for _, m15_candle in (
+                completed_m15.iterrows()
+            ):
+
+                m15_time = (
+                    m15_candle["time"]
+                )
+
+                if m15_time <= h12_time:
+                    continue
+
+                process_m15_candle(
+                    h12_candle,
+                    m15_candle,
+                    processed_setups
+                )
+
+            time.sleep(
+                LOOP_SECONDS
+            )
+
+    except KeyboardInterrupt:
+
+        print(
+            "BOT STOPPED BY USER"
+        )
+
+    except Exception as error:
+
+        print(
+            "BOT ERROR:",
+            error
+        )
+
+    finally:
+
+        disconnect_mt5()
+
+        print(
+            "MT5 DISCONNECTED"
+        )
+
+
+if __name__ == "__main__":
+    main()
