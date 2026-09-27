@@ -1,6 +1,4 @@
 import time
-from datetime import datetime, timezone
-
 import MetaTrader5 as mt5
 
 from config import (
@@ -74,6 +72,7 @@ def print_bot_status(account):
     print("Risk per trade: $20")
     print("SL points: 20000")
     print("Loop seconds:", LOOP_SECONDS)
+    print("Missed signals: IGNORED")
     print("==============================")
     print("")
 
@@ -104,40 +103,6 @@ def setup_exists(setup_id):
 
             if setup_id in comment:
                 return True
-
-    history = mt5.history_deals_get(
-        datetime(
-            2020,
-            1,
-            1,
-            tzinfo=timezone.utc
-        ),
-        datetime.now(
-            timezone.utc
-        )
-    )
-
-    if history is None:
-        return False
-
-    for deal in history:
-
-        if deal.symbol != SYMBOL:
-            continue
-
-        if deal.magic != MAGIC_NUMBER:
-            continue
-
-        comment = str(
-            getattr(
-                deal,
-                "comment",
-                ""
-            )
-        )
-
-        if setup_id in comment:
-            return True
 
     return False
 
@@ -325,6 +290,29 @@ def main():
             "automatic signal monitoring active"
         )
 
+        # Establish the starting point.
+        # Historical candles before this point
+        # are intentionally ignored.
+        startup_m15 = get_m15_data(
+            2
+        )
+
+        if len(startup_m15) < 2:
+
+            raise RuntimeError(
+                "Not enough M15 candles available "
+                "at startup."
+            )
+
+        last_processed_m15_time = (
+            startup_m15.iloc[-2]["time"]
+        )
+
+        print(
+            "Startup M15 candle:",
+            last_processed_m15_time
+        )
+
         while True:
 
             terminal = mt5.terminal_info()
@@ -356,14 +344,10 @@ def main():
             )
 
             m15_data = get_m15_data(
-                100
+                3
             )
 
-            if m15_data.empty:
-
-                print(
-                    "No M15 data available."
-                )
+            if len(m15_data) < 2:
 
                 time.sleep(
                     LOOP_SECONDS
@@ -381,6 +365,13 @@ def main():
 
                 m15_time = (
                     m15_candle["time"]
+                )
+
+                if m15_time <= last_processed_m15_time:
+                    continue
+
+                last_processed_m15_time = (
+                    m15_time
                 )
 
                 if m15_time <= h12_time:
