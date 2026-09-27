@@ -1,6 +1,11 @@
 import MetaTrader5 as mt5
 
-from config import SYMBOL, RISK_PER_TRADE
+from config import (
+    SYMBOL,
+    RISK_PER_TRADE,
+    SL_POINTS,
+)
+
 from lot_manager import calculate_lot
 from risk_manager import validate_risk
 from safety_manager import approve_trade
@@ -8,8 +13,9 @@ from order_manager import place_order
 from strategy import get_tp_level
 
 
-MAX_RISK_USD = float(RISK_PER_TRADE)
-SL_POINTS = 20000
+MAX_RISK_USD = float(
+    RISK_PER_TRADE
+)
 
 
 def calculate_stop_loss(
@@ -52,6 +58,7 @@ def prepare_trade(
         "BUY",
         "SELL"
     ):
+
         raise ValueError(
             "Invalid trade direction."
         )
@@ -61,6 +68,7 @@ def prepare_trade(
     )
 
     if symbol_info is None:
+
         raise RuntimeError(
             f"{SYMBOL} not found in MT5."
         )
@@ -70,6 +78,7 @@ def prepare_trade(
     )
 
     if point <= 0:
+
         raise ValueError(
             "Invalid MT5 point size."
         )
@@ -140,4 +149,54 @@ def prepare_trade(
 
 def execute_trade(
     trade,
-    setup
+    setup_key
+):
+
+    required_fields = (
+        "symbol",
+        "direction",
+        "lot",
+        "entry",
+        "stop_loss",
+        "take_profit",
+        "risk",
+    )
+
+    for field in required_fields:
+
+        if field not in trade:
+
+            raise ValueError(
+                f"Trade is missing required "
+                f"field: {field}"
+            )
+
+    if not setup_key:
+
+        raise ValueError(
+            "Trade blocked: missing setup key."
+        )
+
+    if trade["symbol"] != SYMBOL:
+
+        raise ValueError(
+            f"Trade blocked: only "
+            f"{SYMBOL} is permitted."
+        )
+
+    if trade["risk"] > MAX_RISK_USD + 0.01:
+
+        raise ValueError(
+            f"Trade blocked: risk "
+            f"${trade['risk']:.2f} exceeds "
+            f"${MAX_RISK_USD:.2f}."
+        )
+
+    return place_order(
+        trade["direction"],
+        trade["lot"],
+        trade["entry"],
+        trade["stop_loss"],
+        trade["take_profit"],
+        setup_key
+    )
