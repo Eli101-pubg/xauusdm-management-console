@@ -14,29 +14,8 @@ SYMBOL = os.getenv("MT5_SYMBOL", "XAUUSDm")
 # Permanent strategy timeframe
 TIMEFRAME = "H12"
 
-# --------------------------------------------------
-# RISK MODEL
-# --------------------------------------------------
-
-# Stage 1:
-# Fixed $20 risk until the account exceeds
-# 200% profit from the recorded starting balance.
-FIXED_RISK_USD = 20.0
-
-# Stage 2:
-# 10% of current balance after the trigger.
-COMPOUNDING_RISK_PERCENT = 10.0
-
-# Compounding trigger:
-# 200% profit means balance is greater than
-# 300% of the starting balance.
-COMPOUNDING_TRIGGER_PROFIT_PERCENT = 200.0
-
-# Starting balance must be supplied/stored as the
-# permanent account baseline.
-STARTING_BALANCE = float(
-    os.getenv("STARTING_BALANCE", "0")
-)
+# Risk per trade
+RISK_PER_TRADE = 20.0
 
 # Automatic execution
 AUTO_EXECUTION = os.getenv(
