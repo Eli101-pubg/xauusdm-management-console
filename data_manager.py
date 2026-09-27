@@ -4,7 +4,10 @@ import pandas as pd
 from config import SYMBOL
 
 
-def get_candles(timeframe, count=500):
+def get_candles(
+    timeframe,
+    count=500
+):
 
     rates = mt5.copy_rates_from_pos(
         SYMBOL,
@@ -14,12 +17,15 @@ def get_candles(timeframe, count=500):
     )
 
     if rates is None or len(rates) == 0:
+
         raise RuntimeError(
             f"Could not retrieve {SYMBOL} candles: "
             f"{mt5.last_error()}"
         )
 
-    df = pd.DataFrame(rates)
+    df = pd.DataFrame(
+        rates
+    )
 
     df["time"] = pd.to_datetime(
         df["time"],
@@ -38,6 +44,7 @@ def get_completed_h12_candle():
     )
 
     if len(df) < 2:
+
         raise RuntimeError(
             "Not enough H12 candles available."
         )
@@ -45,7 +52,9 @@ def get_completed_h12_candle():
     return df.iloc[-2].copy()
 
 
-def get_h12_data(count=500):
+def get_h12_data(
+    count=500
+):
 
     return get_candles(
         mt5.TIMEFRAME_H12,
@@ -53,7 +62,9 @@ def get_h12_data(count=500):
     )
 
 
-def get_m15_data(count=500):
+def get_m15_data(
+    count=500
+):
 
     return get_candles(
         mt5.TIMEFRAME_M15,
@@ -61,7 +72,9 @@ def get_m15_data(count=500):
     )
 
 
-def get_m5_data(count=500):
+def get_m5_data(
+    count=500
+):
 
     return get_candles(
         mt5.TIMEFRAME_M5,
