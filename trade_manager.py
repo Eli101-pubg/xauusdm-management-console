@@ -19,12 +19,17 @@ def prepare_trade(
     fib_levels
 ):
 
-    if direction not in ("BUY", "SELL"):
+    if direction not in (
+        "BUY",
+        "SELL"
+    ):
         raise ValueError(
             "Invalid trade direction."
         )
 
-    symbol_info = mt5.symbol_info(SYMBOL)
+    symbol_info = mt5.symbol_info(
+        SYMBOL
+    )
 
     if symbol_info is None:
         raise RuntimeError(
@@ -69,6 +74,7 @@ def prepare_trade(
     )
 
     if risk > MAX_RISK_USD + 0.01:
+
         raise ValueError(
             f"Trade blocked: risk "
             f"${risk:.2f} exceeds "
@@ -105,23 +111,27 @@ def execute_trade(
     for field in required_fields:
 
         if field not in trade:
+
             raise ValueError(
-                f"Trade is missing required field: "
-                f"{field}"
+                f"Trade is missing required "
+                f"field: {field}"
             )
 
     if not setup_key:
+
         raise ValueError(
             "Trade blocked: missing setup key."
         )
 
     if trade["symbol"] != SYMBOL:
+
         raise ValueError(
-            f"Trade blocked: only {SYMBOL} "
-            f"is permitted."
+            f"Trade blocked: only "
+            f"{SYMBOL} is permitted."
         )
 
     if trade["risk"] > MAX_RISK_USD + 0.01:
+
         raise ValueError(
             f"Trade blocked: risk "
             f"${trade['risk']:.2f} exceeds "
