@@ -8,19 +8,18 @@ def place_order(
     lot,
     entry_price,
     stop_loss,
-    take_profit
+    take_profit,
+    setup_key
 ):
-    """
-    Send a validated market order to MT5.
-
-    The actual market price is obtained from the
-    current XAUUSDm tick rather than relying on a
-    stale signal price.
-    """
 
     if direction not in ("BUY", "SELL"):
         raise ValueError(
             "Direction must be BUY or SELL."
+        )
+
+    if not setup_key:
+        raise ValueError(
+            "Missing qualifying setup key."
         )
 
     symbol_info = mt5.symbol_info(SYMBOL)
@@ -31,6 +30,7 @@ def place_order(
         )
 
     if not symbol_info.visible:
+
         if not mt5.symbol_select(
             SYMBOL,
             True
@@ -48,10 +48,12 @@ def place_order(
         )
 
     if direction == "BUY":
+
         order_type = mt5.ORDER_TYPE_BUY
         market_price = float(tick.ask)
 
     else:
+
         order_type = mt5.ORDER_TYPE_SELL
         market_price = float(tick.bid)
 
@@ -70,7 +72,6 @@ def place_order(
             "Invalid take-profit."
         )
 
-    # Final directional price validation.
     if direction == "BUY":
 
         if stop_loss >= market_price:
@@ -99,6 +100,11 @@ def place_order(
                 "be below current market price."
             )
 
+    comment = (
+        "XAUUSDm Fibonacci Bot | "
+        + str(setup_key)
+    )
+
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": SYMBOL,
@@ -109,7 +115,7 @@ def place_order(
         "tp": float(take_profit),
         "deviation": DEVIATION,
         "magic": MAGIC_NUMBER,
-        "comment": "XAUUSDm Fibonacci Bot",
+        "comment": comment,
         "type_time": mt5.ORDER_TIME_GTC,
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
@@ -136,5 +142,6 @@ def place_order(
     print("Entry:", market_price)
     print("Stop Loss:", stop_loss)
     print("Take Profit:", take_profit)
+    print("Setup:", setup_key)
 
     return result
