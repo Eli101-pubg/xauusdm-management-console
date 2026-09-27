@@ -11,16 +11,19 @@ from config import (
 def connect_mt5():
 
     if not MT5_LOGIN:
+
         raise RuntimeError(
             "MT5_LOGIN is not configured."
         )
 
     if not MT5_PASSWORD:
+
         raise RuntimeError(
             "MT5_PASSWORD is not configured."
         )
 
     if not MT5_SERVER:
+
         raise RuntimeError(
             "MT5_SERVER is not configured."
         )
@@ -55,7 +58,8 @@ def connect_mt5():
         mt5.shutdown()
 
         raise RuntimeError(
-            "Could not retrieve MT5 account information."
+            "Could not retrieve MT5 "
+            "account information."
         )
 
     symbol_info = mt5.symbol_info(
@@ -69,6 +73,19 @@ def connect_mt5():
         raise RuntimeError(
             f"{SYMBOL} was not found in MT5."
         )
+
+    if not symbol_info.visible:
+
+        if not mt5.symbol_select(
+            SYMBOL,
+            True
+        ):
+
+            mt5.shutdown()
+
+            raise RuntimeError(
+                f"Could not select {SYMBOL}."
+            )
 
     print("MT5 CONNECTED")
     print("Account:", account.login)
