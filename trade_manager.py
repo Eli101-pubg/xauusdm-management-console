@@ -1,6 +1,6 @@
 import MetaTrader5 as mt5
 
-from config import SYMBOL
+from config import SYMBOL, RISK_PER_TRADE
 from lot_manager import calculate_lot
 from risk_manager import validate_risk
 from safety_manager import approve_trade
@@ -8,7 +8,7 @@ from order_manager import place_order
 from strategy import get_tp_level
 
 
-MAX_RISK_USD = 20.0
+MAX_RISK_USD = float(RISK_PER_TRADE)
 
 
 def prepare_trade(
@@ -18,24 +18,41 @@ def prepare_trade(
     entry_level_name,
     fib_levels
 ):
+    """
+    Build and validate a trade before execution.
+
+    No order is sent by this function.
+    """
+
     if direction not in ("BUY", "SELL"):
-        raise ValueError("Invalid trade direction")
+        raise ValueError(
+            "Invalid trade direction."
+        )
 
     symbol_info = mt5.symbol_info(SYMBOL)
 
     if symbol_info is None:
-        raise RuntimeError(f"{SYMBOL} not found")
+        raise RuntimeError(
+            f"{SYMBOL} not found in MT5."
+        )
 
+    # Calculate a lot size that stays within $20 risk.
     lot = calculate_lot(
         SYMBOL,
         entry_price,
         stop_loss
     )
 
-    tick_size = symbol_info.trade_tick_size
-    tick_value = symbol_info.trade_tick_value
+    tick_size = float(
+        symbol_info.trade_tick_size
+    )
 
-    validate_risk(
+    tick_value = float(
+        symbol_info.trade_tick_value
+    )
+
+    # Calculate actual monetary risk.
+    risk = validate_risk(
         entry_price,
         stop_loss,
         lot,
@@ -43,37 +60,78 @@ def prepare_trade(
         tick_value
     )
 
+    # Calculate TP from the Fibonacci system.
     take_profit = get_tp_level(
         direction,
         entry_level_name,
         fib_levels
     )
 
-    risk = (
-        abs(entry_price - stop_loss)
-        / tick_size
-    ) * tick_value * lot
-
+    # Final safety gate.
     approve_trade(
         SYMBOL,
+        direction,
         risk,
         entry_price,
         stop_loss,
         take_profit
     )
 
+    # Extra hard check.
+    if risk > MAX_RISK_USD + 0.01:
+        raise ValueError(
+            f"Trade blocked: risk "
+            f"${risk:.2f} exceeds "
+            f"${MAX_RISK_USD:.2f}."
+        )
+
     return {
         "symbol": SYMBOL,
         "direction": direction,
         "lot": lot,
-        "entry": entry_price,
-        "stop_loss": stop_loss,
-        "take_profit": take_profit,
-        "risk": risk
+        "entry": float(entry_price),
+        "stop_loss": float(stop_loss),
+        "take_profit": float(take_profit),
+        "risk": float(risk),
+        "entry_level": entry_level_name,
     }
 
 
 def execute_trade(trade):
+    """
+    Execute an already validated trade.
+    """
+
+    required_fields = (
+        "symbol",
+        "direction",
+        "lot",
+        "entry",
+        "stop_loss",
+        "take_profit",
+        "risk",
+    )
+
+    for field in required_fields:
+        if field not in trade:
+            raise ValueError(
+                f"Trade is missing required field: "
+                f"{field}"
+            )
+
+    if trade["symbol"] != SYMBOL:
+        raise ValueError(
+            f"Trade blocked: only {SYMBOL} "
+            f"is permitted."
+        )
+
+    if trade["risk"] > MAX_RISK_USD + 0.01:
+        raise ValueError(
+            f"Trade blocked: risk "
+            f"${trade['risk']:.2f} exceeds "
+            f"${MAX_RISK_USD:.2f}."
+        )
+
     return place_order(
         trade["direction"],
         trade["lot"],
