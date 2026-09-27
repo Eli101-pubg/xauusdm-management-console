@@ -5,6 +5,7 @@ from config import SYMBOL
 
 
 def get_candles(timeframe, count=500):
+
     rates = mt5.copy_rates_from_pos(
         SYMBOL,
         timeframe,
@@ -30,11 +31,6 @@ def get_candles(timeframe, count=500):
 
 
 def get_completed_h12_candle():
-    """
-    Return the most recent COMPLETED H12 candle.
-
-    The currently forming H12 candle is excluded.
-    """
 
     df = get_candles(
         mt5.TIMEFRAME_H12,
@@ -46,12 +42,11 @@ def get_completed_h12_candle():
             "Not enough H12 candles available."
         )
 
-    # MT5 includes the currently forming candle
-    # at the end of the returned data.
     return df.iloc[-2].copy()
 
 
 def get_h12_data(count=500):
+
     return get_candles(
         mt5.TIMEFRAME_H12,
         count
@@ -59,6 +54,7 @@ def get_h12_data(count=500):
 
 
 def get_m15_data(count=500):
+
     return get_candles(
         mt5.TIMEFRAME_M15,
         count
@@ -66,6 +62,7 @@ def get_m15_data(count=500):
 
 
 def get_m5_data(count=500):
+
     return get_candles(
         mt5.TIMEFRAME_M5,
         count
