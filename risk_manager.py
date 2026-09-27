@@ -1,77 +1,6 @@
 import MetaTrader5 as mt5
 
-from config import (
-    FIXED_RISK_USD,
-    COMPOUNDING_RISK_PERCENT,
-    COMPOUNDING_TRIGGER_PROFIT_PERCENT,
-    STARTING_BALANCE,
-)
-
-
-def get_active_risk(account_balance):
-    """
-    Determine the active risk model.
-
-    Stage 1:
-    Fixed $20 risk.
-
-    Stage 2:
-    10% of current balance after the account
-    exceeds 200% profit from the starting balance.
-    """
-
-    account_balance = float(account_balance)
-
-    if account_balance <= 0:
-        raise ValueError(
-            "Invalid account balance."
-        )
-
-    if STARTING_BALANCE <= 0:
-        raise ValueError(
-            "STARTING_BALANCE must be configured "
-            "in the local .env file."
-        )
-
-    profit_percent = (
-        (
-            account_balance - STARTING_BALANCE
-        )
-        / STARTING_BALANCE
-    ) * 100.0
-
-    trigger_reached = (
-        profit_percent
-        > COMPOUNDING_TRIGGER_PROFIT_PERCENT
-    )
-
-    if trigger_reached:
-
-        risk_amount = (
-            account_balance
-            * COMPOUNDING_RISK_PERCENT
-            / 100.0
-        )
-
-        return {
-            "risk_amount": float(risk_amount),
-            "risk_percent": float(
-                COMPOUNDING_RISK_PERCENT
-            ),
-            "profit_percent": float(
-                profit_percent
-            ),
-            "mode": "10_PERCENT_COMPOUNDING",
-        }
-
-    return {
-        "risk_amount": float(FIXED_RISK_USD),
-        "risk_percent": None,
-        "profit_percent": float(
-            profit_percent
-        ),
-        "mode": "FIXED_20_USD",
-    }
+from config import RISK_PER_TRADE
 
 
 def calculate_trade_risk(
@@ -131,12 +60,11 @@ def validate_risk(
     stop_loss,
     lot,
     tick_size,
-    tick_value,
-    account_balance
+    tick_value
 ):
     """
-    Validate the calculated trade risk against
-    the currently active risk model.
+    Validate calculated trade risk against
+    the permanent $20 risk limit.
     """
 
     risk = calculate_trade_risk(
@@ -147,12 +75,8 @@ def validate_risk(
         tick_value
     )
 
-    active_risk = get_active_risk(
-        account_balance
-    )
-
     maximum_risk = float(
-        active_risk["risk_amount"]
+        RISK_PER_TRADE
     )
 
     if risk > maximum_risk + 0.01:
