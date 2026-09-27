@@ -1,16 +1,17 @@
 from datetime import datetime, timezone
 
+import MetaTrader5 as mt5
+
 from config import SYMBOL, RISK_PER_TRADE
 
 
 MAX_RISK_USD = float(RISK_PER_TRADE)
 ALLOWED_SYMBOL = "XAUUSDm"
+MAX_CONSECUTIVE_LOSSES = 3
+MAGIC_NUMBER = 260926
 
 
 def validate_symbol(symbol):
-    """
-    Only XAUUSDm is permitted.
-    """
 
     if symbol != ALLOWED_SYMBOL:
         raise ValueError(
@@ -22,9 +23,6 @@ def validate_symbol(symbol):
 
 
 def validate_risk(risk):
-    """
-    Hard maximum-risk protection.
-    """
 
     if risk <= 0:
         raise ValueError(
@@ -47,10 +45,6 @@ def validate_prices(
     stop_loss,
     take_profit
 ):
-    """
-    Validate that SL and TP are on the correct
-    side of the entry.
-    """
 
     if entry <= 0:
         raise ValueError(
@@ -104,9 +98,6 @@ def validate_prices(
 
 
 def weekend_block():
-    """
-    No trading on Saturday or Sunday.
-    """
 
     weekday = datetime.now(
         timezone.utc
@@ -114,6 +105,84 @@ def weekend_block():
 
     if weekday >= 5:
         return False
+
+    return True
+
+
+def get_consecutive_losses():
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    history = mt5.history_deals_get(
+        datetime(
+            2020,
+            1,
+            1,
+            tzinfo=timezone.utc
+        ),
+        now
+    )
+
+    if history is None:
+        return 0
+
+    closed_deals = []
+
+    for deal in history:
+
+        if deal.symbol != ALLOWED_SYMBOL:
+            continue
+
+        if deal.magic != MAGIC_NUMBER:
+            continue
+
+        if deal.entry != mt5.DEAL_ENTRY_OUT:
+            continue
+
+        profit = (
+            float(deal.profit)
+            + float(deal.swap)
+            + float(deal.commission)
+        )
+
+        closed_deals.append(
+            (
+                int(deal.time),
+                profit
+            )
+        )
+
+    closed_deals.sort(
+        key=lambda item: item[0],
+        reverse=True
+    )
+
+    consecutive_losses = 0
+
+    for _, profit in closed_deals:
+
+        if profit < 0:
+            consecutive_losses += 1
+
+        else:
+            break
+
+    return consecutive_losses
+
+
+def validate_consecutive_losses():
+
+    losses = get_consecutive_losses()
+
+    if losses >= MAX_CONSECUTIVE_LOSSES:
+        raise ValueError(
+            f"Trade rejected: "
+            f"{losses} consecutive losses reached "
+            f"the maximum of "
+            f"{MAX_CONSECUTIVE_LOSSES}."
+        )
 
     return True
 
@@ -126,9 +195,6 @@ def approve_trade(
     stop_loss,
     take_profit
 ):
-    """
-    Final safety gate before an order can be sent.
-    """
 
     validate_symbol(symbol)
 
@@ -140,6 +206,8 @@ def approve_trade(
         stop_loss,
         take_profit
     )
+
+    validate_consecutive_losses()
 
     if not weekend_block():
         raise ValueError(
