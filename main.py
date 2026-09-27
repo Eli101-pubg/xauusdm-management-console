@@ -28,7 +28,6 @@ from trade_manager import (
 from order_manager import make_setup_id
 
 
-SL_DISTANCE = 10.0
 MAGIC_NUMBER = 260926
 
 
@@ -67,7 +66,6 @@ def print_bot_status(account):
     print("Automatic execution:", AUTO_EXECUTION)
     print("Demo only:", DEMO_ONLY)
     print("Risk per trade: $20")
-    print("SL distance:", SL_DISTANCE)
     print("Loop seconds:", LOOP_SECONDS)
     print("==============================")
     print("")
@@ -194,27 +192,6 @@ def process_m15_candle(
             "fib_levels"
         ]
 
-        if direction == "BUY":
-
-            stop_loss = (
-                entry - SL_DISTANCE
-            )
-
-        elif direction == "SELL":
-
-            stop_loss = (
-                entry + SL_DISTANCE
-            )
-
-        else:
-
-            print(
-                "Invalid signal direction:",
-                direction
-            )
-
-            continue
-
         print("")
         print("==============================")
         print("QUALIFYING SIGNAL")
@@ -223,7 +200,7 @@ def process_m15_candle(
         print("Direction:", direction)
         print("Entry level:", level)
         print("Signal entry:", entry)
-        print("Stop loss:", stop_loss)
+        print("Risk limit: $20")
         print("Setup ID:", setup_id)
 
         try:
@@ -231,7 +208,6 @@ def process_m15_candle(
             trade = prepare_trade(
                 direction,
                 entry,
-                stop_loss,
                 level,
                 fib_levels
             )
@@ -239,6 +215,11 @@ def process_m15_candle(
             print(
                 "Lot:",
                 trade["lot"]
+            )
+
+            print(
+                "Stop loss:",
+                trade["stop_loss"]
             )
 
             print(
@@ -329,7 +310,9 @@ def main():
                 h12_candle["time"]
             )
 
-            m15_data = get_m15_data(100)
+            m15_data = get_m15_data(
+                100
+            )
 
             if m15_data.empty:
 
