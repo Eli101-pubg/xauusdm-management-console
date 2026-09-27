@@ -72,9 +72,49 @@ def print_bot_status(account):
     print("")
 
 
+def setup_exists(
+    h12_time,
+    m15_time,
+    level,
+    direction
+):
+
+    positions = mt5.positions_get(
+        symbol=SYMBOL
+    )
+
+    if positions is None:
+        return False
+
+    for position in positions:
+
+        if position.magic != 260926:
+            continue
+
+        if position.symbol != SYMBOL:
+            continue
+
+        comment = str(
+            position.comment
+        )
+
+        setup_key = (
+            f"{h12_time}|"
+            f"{m15_time}|"
+            f"{level}|"
+            f"{direction}"
+        )
+
+        if setup_key in comment:
+            return True
+
+    return False
+
+
 def process_m15_candle(
     h12_candle,
-    m15_candle
+    m15_candle,
+    processed_setups
 ):
 
     h12_high = float(
@@ -83,6 +123,14 @@ def process_m15_candle(
 
     h12_low = float(
         h12_candle["low"]
+    )
+
+    h12_time = str(
+        h12_candle["time"]
+    )
+
+    m15_time = str(
+        m15_candle["time"]
     )
 
     candle_high = float(
@@ -103,9 +151,9 @@ def process_m15_candle(
     print("")
     print(
         "M15:",
-        m15_candle["time"],
+        m15_time,
         "| H12:",
-        h12_candle["time"]
+        h12_time
     )
 
     if not signals:
@@ -119,12 +167,50 @@ def process_m15_candle(
     for signal in signals:
 
         direction = signal["direction"]
+        level = signal["level"]
+
+        setup_key = (
+            f"{h12_time}|"
+            f"{m15_time}|"
+            f"{level}|"
+            f"{direction}"
+        )
+
+        if setup_key in processed_setups:
+
+            print(
+                "Setup already processed:",
+                setup_key
+            )
+
+            continue
+
+        if setup_exists(
+            h12_time,
+            m15_time,
+            level,
+            direction
+        ):
+
+            print(
+                "Existing position found "
+                "for setup:",
+                setup_key
+            )
+
+            processed_setups.add(
+                setup_key
+            )
+
+            continue
+
+        processed_setups.add(
+            setup_key
+        )
 
         entry = float(
             signal["price"]
         )
-
-        level = signal["level"]
 
         fib_levels = signal["fib_levels"]
 
@@ -158,6 +244,7 @@ def process_m15_candle(
         print("Entry level:", level)
         print("Signal entry:", entry)
         print("Stop loss:", stop_loss)
+        print("Setup:", setup_key)
 
         try:
 
@@ -194,7 +281,8 @@ def process_m15_candle(
                 continue
 
             result = execute_trade(
-                trade
+                trade,
+                setup_key
             )
 
             print(
@@ -214,7 +302,7 @@ def main():
 
     account = None
 
-    processed_m15 = set()
+    processed_setups = set()
 
     try:
 
@@ -273,20 +361,10 @@ def main():
                 completed_m15.iterrows()
             ):
 
-                candle_time = (
-                    m15_candle["time"]
-                )
-
-                if candle_time in processed_m15:
-                    continue
-
-                processed_m15.add(
-                    candle_time
-                )
-
                 process_m15_candle(
                     h12_candle,
-                    m15_candle
+                    m15_candle,
+                    processed_setups
                 )
 
             time.sleep(
