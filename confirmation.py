@@ -1,27 +1,74 @@
-print("=== LAST TRADE DEBUG ==="); print("SYMBOL:", globals().get("SYMBOL")); print("LAST SIGNAL:", globals().get("last_signal")); print("LAST ENTRY:", globals().get("last_entry")); print("LAST FIB:", globals().get("last_fib")); print("LAST H12:", globals().get("last_h12")); print("LAST SL:", globals().get("last_sl")); print("LAST TP:", globals().get("last_tp"))
+def validate_confirmation(
+    direction,
+    confirmation_high,
+    confirmation_low,
+    entry_price
+):
+    """
+    Validate that the confirmation candle actually
+    interacted with the intended entry price.
+
+    This module does not create a signal.
+    It only validates confirmation data supplied
+    by the signal engine.
+    """
+
+    if direction not in ("BUY", "SELL"):
+        raise ValueError(
+            "Invalid confirmation direction."
+        )
+
+    if entry_price <= 0:
+        raise ValueError(
+            "Invalid entry price."
+        )
+
+    if confirmation_high <= 0:
+        raise ValueError(
+            "Invalid confirmation high."
+        )
+
+    if confirmation_low <= 0:
+        raise ValueError(
+            "Invalid confirmation low."
+        )
+
+    if confirmation_low > confirmation_high:
+        raise ValueError(
+            "Confirmation low cannot be above high."
+        )
+
+    # The confirmation candle must actually
+    # contain/interact with the entry price.
+    if not (
+        confirmation_low
+        <= entry_price
+        <= confirmation_high
+    ):
+        return False
+
+    return True
 
 
-print([k for k in globals() if any(x in k.lower() for x in ["signal","fib","order","trade","entry","setup","sl","tp"])])
+def confirmation_result(
+    direction,
+    confirmation_high,
+    confirmation_low,
+    entry_price
+):
+    """
+    Return a structured confirmation result.
+    """
 
-print("BOT ACTIVE:", "AUTOMATIC BOT RUNNING" in globals().get("__doc__", ""))
+    confirmed = validate_confirmation(
+        direction,
+        confirmation_high,
+        confirmation_low,
+        entry_price
+    )
 
-print("BOT PROCESS CHECK")
-
-import os; print(os.getcwd())
-
-import os; print("DESKTOP:", os.listdir(os.path.join(os.path.expanduser("~"), "Desktop"))); print("DOCUMENTS:", os.listdir(os.path.join(os.path.expanduser("~"), "Documents")))
-
-import os; print(os.getcwd())
-
-import os; print([os.path.join(r"C:\Users\silvi", f) for f in os.listdir(r"C:\Users\silvi") if f.lower().endswith(".py")])
-
-import os; print([os.path.join(r"C:\Users\silvi", f) for root,dirs,files in os.walk(r"C:\Users\silvi") if "AppData" not in root for f in files if 
-f.lower().endswith(".py")][:50])
-
-exec(open(r"C:\Downloads\silvi\xauusd_auto_bot.py", encoding="utf-8").read())
-
-print("BOT FILE TEST:", __import__("os").path.exists(r"C:\Users\silvi\xauusd_auto_bot.py"))
-
-import os; print([repr(os.path.join(root,f)) for root,dirs,files in os.walk(r"C:\Users\silvi") if "AppData" not in root for f in files if f.lower()=="xauusd_auto_bot.py"])
-
-exec(open(r"C:\Users\silvi\Downloads\xauusd_auto_bot.py", encoding="utf-8").read())
+    return {
+        "confirmed": confirmed,
+        "direction": direction,
+        "entry_price": float(entry_price),
+    }
