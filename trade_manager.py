@@ -9,12 +9,41 @@ from strategy import get_tp_level
 
 
 MAX_RISK_USD = float(RISK_PER_TRADE)
+SL_POINTS = 20000
+
+
+def calculate_stop_loss(
+    direction,
+    entry_price,
+    point
+):
+
+    sl_distance = (
+        SL_POINTS * point
+    )
+
+    if direction == "BUY":
+
+        return (
+            float(entry_price)
+            - sl_distance
+        )
+
+    if direction == "SELL":
+
+        return (
+            float(entry_price)
+            + sl_distance
+        )
+
+    raise ValueError(
+        "Invalid trade direction."
+    )
 
 
 def prepare_trade(
     direction,
     entry_price,
-    stop_loss,
     entry_level_name,
     fib_levels
 ):
@@ -35,6 +64,21 @@ def prepare_trade(
         raise RuntimeError(
             f"{SYMBOL} not found in MT5."
         )
+
+    point = float(
+        symbol_info.point
+    )
+
+    if point <= 0:
+        raise ValueError(
+            "Invalid MT5 point size."
+        )
+
+    stop_loss = calculate_stop_loss(
+        direction,
+        entry_price,
+        point
+    )
 
     lot = calculate_lot(
         SYMBOL,
@@ -90,59 +134,10 @@ def prepare_trade(
         "take_profit": float(take_profit),
         "risk": float(risk),
         "entry_level": entry_level_name,
+        "sl_points": SL_POINTS,
     }
 
 
 def execute_trade(
     trade,
-    setup_key
-):
-
-    required_fields = (
-        "symbol",
-        "direction",
-        "lot",
-        "entry",
-        "stop_loss",
-        "take_profit",
-        "risk",
-    )
-
-    for field in required_fields:
-
-        if field not in trade:
-
-            raise ValueError(
-                f"Trade is missing required "
-                f"field: {field}"
-            )
-
-    if not setup_key:
-
-        raise ValueError(
-            "Trade blocked: missing setup key."
-        )
-
-    if trade["symbol"] != SYMBOL:
-
-        raise ValueError(
-            f"Trade blocked: only "
-            f"{SYMBOL} is permitted."
-        )
-
-    if trade["risk"] > MAX_RISK_USD + 0.01:
-
-        raise ValueError(
-            f"Trade blocked: risk "
-            f"${trade['risk']:.2f} exceeds "
-            f"${MAX_RISK_USD:.2f}."
-        )
-
-    return place_order(
-        trade["direction"],
-        trade["lot"],
-        trade["entry"],
-        trade["stop_loss"],
-        trade["take_profit"],
-        setup_key
-    )
+    setup
