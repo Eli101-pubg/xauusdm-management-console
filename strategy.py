@@ -35,10 +35,6 @@ def calculate_fibonacci(high, low):
     return levels
 
 
-def first_touch(candle_high, candle_low, level):
-    return candle_low <= level <= candle_high
-
-
 def get_entry_levels(fib_levels):
     return {
         name: fib_levels[name]
