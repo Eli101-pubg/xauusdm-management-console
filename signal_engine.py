@@ -1,71 +1,72 @@
 from strategy import (
-calculate_fibonacci,
-ENTRY_LEVELS,
+    calculate_fibonacci,
+    ENTRY_LEVELS,
 )
+
 
 def build_signals(
-h12_high,
-h12_low,
-candle_open,
-candle_high,
-candle_low,
-candle_close
-):
-"""
-Build ALL qualifying Fibonacci signals
-from ONE completed H12 candle.
-
-Multiple touches are allowed.
-78.6 is never an entry level.
-
-BUY:
-    M15 candle starts above the Fibonacci level
-    and touches/crosses down to it.
-
-SELL:
-    M15 candle starts below the Fibonacci level
-    and touches/crosses up to it.
-
-Candles that cross the level from both sides
-without a clear starting direction are rejected.
-"""
-
-fib_levels = calculate_fibonacci(
     h12_high,
-    h12_low
-)
+    h12_low,
+    candle_open,
+    candle_high,
+    candle_low,
+    candle_close
+):
+    """
+    Build ALL qualifying Fibonacci signals
+    from ONE completed H12 candle.
 
-signals = []
+    Multiple touches are allowed.
+    78.6 is never an entry level.
 
-for level_name in ENTRY_LEVELS:
+    BUY:
+        M15 candle starts above the Fibonacci level
+        and touches/crosses down to it.
 
-    level_price = fib_levels[level_name]
+    SELL:
+        M15 candle starts below the Fibonacci level
+        and touches/crosses up to it.
 
-    touched = (
-        candle_low <= level_price <= candle_high
+    Candles that cross the level from both sides
+    without a clear starting direction are rejected.
+    """
+
+    fib_levels = calculate_fibonacci(
+        h12_high,
+        h12_low
     )
 
-    if not touched:
-        continue
+    signals = []
 
-    if candle_open > level_price:
+    for level_name in ENTRY_LEVELS:
 
-        direction = "BUY"
+        level_price = fib_levels[level_name]
 
-    elif candle_open < level_price:
+        touched = (
+            candle_low <= level_price <= candle_high
+        )
 
-        direction = "SELL"
+        if not touched:
+            continue
 
-    else:
+        if candle_open > level_price:
 
-        continue
+            direction = "BUY"
 
-    signals.append({
-        "signal": True,
-        "direction": direction,
-        "level": level_name,
-        "price": level_price,
-        "fib_levels": fib_levels,
-    })
+        elif candle_open < level_price:
 
-return signals
+            direction = "SELL"
+
+        else:
+
+            continue
+
+        signals.append({
+            "signal": True,
+            "direction": direction,
+            "level": level_name,
+            "price": level_price,
+            "fib_levels": fib_levels,
+        })
+
+    return signals
