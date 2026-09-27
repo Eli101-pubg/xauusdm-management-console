@@ -32,6 +32,7 @@ SL_DISTANCE = 10.0
 
 
 def check_mt5_symbol():
+
     symbol_info = mt5.symbol_info(SYMBOL)
 
     if symbol_info is None:
@@ -40,6 +41,7 @@ def check_mt5_symbol():
         )
 
     if not symbol_info.visible:
+
         if not mt5.symbol_select(
             SYMBOL,
             True
@@ -52,6 +54,7 @@ def check_mt5_symbol():
 
 
 def print_bot_status(account):
+
     print("")
     print("==============================")
     print("XAUUSDm PYTHON BOT")
@@ -69,9 +72,148 @@ def print_bot_status(account):
     print("")
 
 
+def process_m15_candle(
+    h12_candle,
+    m15_candle
+):
+
+    h12_high = float(
+        h12_candle["high"]
+    )
+
+    h12_low = float(
+        h12_candle["low"]
+    )
+
+    candle_high = float(
+        m15_candle["high"]
+    )
+
+    candle_low = float(
+        m15_candle["low"]
+    )
+
+    signals = build_signals(
+        h12_high,
+        h12_low,
+        candle_high,
+        candle_low
+    )
+
+    print("")
+    print(
+        "M15:",
+        m15_candle["time"],
+        "| H12:",
+        h12_candle["time"]
+    )
+
+    if not signals:
+
+        print(
+            "No qualifying Fibonacci signal."
+        )
+
+        return
+
+    for signal in signals:
+
+        direction = signal["direction"]
+
+        entry = float(
+            signal["price"]
+        )
+
+        level = signal["level"]
+
+        fib_levels = signal["fib_levels"]
+
+        if direction == "BUY":
+
+            stop_loss = (
+                entry - SL_DISTANCE
+            )
+
+        elif direction == "SELL":
+
+            stop_loss = (
+                entry + SL_DISTANCE
+            )
+
+        else:
+
+            print(
+                "Invalid signal direction:",
+                direction
+            )
+
+            continue
+
+        print("")
+        print("==============================")
+        print("QUALIFYING SIGNAL")
+        print("==============================")
+        print("Symbol:", SYMBOL)
+        print("Direction:", direction)
+        print("Entry level:", level)
+        print("Signal entry:", entry)
+        print("Stop loss:", stop_loss)
+
+        try:
+
+            trade = prepare_trade(
+                direction,
+                entry,
+                stop_loss,
+                level,
+                fib_levels
+            )
+
+            print(
+                "Lot:",
+                trade["lot"]
+            )
+
+            print(
+                "Take profit:",
+                trade["take_profit"]
+            )
+
+            print(
+                "Risk:",
+                trade["risk"]
+            )
+
+            if not AUTO_EXECUTION:
+
+                print(
+                    "AUTO EXECUTION DISABLED - "
+                    "signal not sent."
+                )
+
+                continue
+
+            result = execute_trade(
+                trade
+            )
+
+            print(
+                "ORDER RESULT:",
+                result
+            )
+
+        except Exception as trade_error:
+
+            print(
+                "TRADE REJECTED:",
+                trade_error
+            )
+
+
 def main():
 
     account = None
+
     processed_m15 = set()
 
     try:
@@ -96,144 +238,81 @@ def main():
                     "MT5 terminal connection lost."
                 )
 
-            current_account = mt5.account_info()
+            current_account = (
+                mt5.account_info()
+            )
 
             if current_account is None:
                 raise RuntimeError(
                     "MT5 account connection lost."
                 )
 
-            h12_candle = get_completed_h12_candle()
+            h12_candle = (
+                get_completed_h12_candle()
+            )
 
-            m15_data = get_m15_data(10)
+            m15_data = get_m15_data(100)
 
             if m15_data.empty:
-                print("No M15 data available.")
-                time.sleep(LOOP_SECONDS)
+
+                print(
+                    "No M15 data available."
+                )
+
+                time.sleep(
+                    LOOP_SECONDS
+                )
+
                 continue
 
-            latest_m15 = m15_data.iloc[-1]
-
-            candle_time = latest_m15["time"]
-
-            if candle_time in processed_m15:
-                time.sleep(LOOP_SECONDS)
-                continue
-
-            processed_m15.add(candle_time)
-
-            h12_high = float(h12_candle["high"])
-            h12_low = float(h12_candle["low"])
-
-            candle_high = float(latest_m15["high"])
-            candle_low = float(latest_m15["low"])
-
-            signals = build_signals(
-                h12_high,
-                h12_low,
-                candle_high,
-                candle_low
+            completed_m15 = (
+                m15_data.iloc[:-1]
             )
 
-            print("")
-            print(
-                "M15:",
-                candle_time,
-                "| H12:",
-                h12_candle["time"]
-            )
+            for index, m15_candle in (
+                completed_m15.iterrows()
+            ):
 
-            if not signals:
-                print("No qualifying Fibonacci signal.")
-                time.sleep(LOOP_SECONDS)
-                continue
+                candle_time = (
+                    m15_candle["time"]
+                )
 
-            for signal in signals:
-
-                direction = signal["direction"]
-                entry = float(signal["price"])
-                level = signal["level"]
-                fib_levels = signal["fib_levels"]
-
-                if direction == "BUY":
-                    stop_loss = entry - SL_DISTANCE
-
-                elif direction == "SELL":
-                    stop_loss = entry + SL_DISTANCE
-
-                else:
-                    print(
-                        "Invalid signal direction:",
-                        direction
-                    )
+                if candle_time in processed_m15:
                     continue
 
-                print("")
-                print("==============================")
-                print("QUALIFYING SIGNAL")
-                print("==============================")
-                print("Symbol:", SYMBOL)
-                print("Direction:", direction)
-                print("Entry level:", level)
-                print("Signal entry:", entry)
-                print("Stop loss:", stop_loss)
+                processed_m15.add(
+                    candle_time
+                )
 
-                try:
+                process_m15_candle(
+                    h12_candle,
+                    m15_candle
+                )
 
-                    trade = prepare_trade(
-                        direction,
-                        entry,
-                        stop_loss,
-                        level,
-                        fib_levels
-                    )
-
-                    print("Lot:", trade["lot"])
-                    print(
-                        "Take profit:",
-                        trade["take_profit"]
-                    )
-                    print(
-                        "Risk:",
-                        trade["risk"]
-                    )
-
-                    if not AUTO_EXECUTION:
-                        print(
-                            "AUTO EXECUTION DISABLED - "
-                            "signal not sent."
-                        )
-                        continue
-
-                    result = execute_trade(trade)
-
-                    print(
-                        "ORDER RESULT:",
-                        result
-                    )
-
-                except Exception as trade_error:
-
-                    print(
-                        "TRADE REJECTED:",
-                        trade_error
-                    )
-
-            time.sleep(LOOP_SECONDS)
+            time.sleep(
+                LOOP_SECONDS
+            )
 
     except KeyboardInterrupt:
 
-        print("BOT STOPPED BY USER")
+        print(
+            "BOT STOPPED BY USER"
+        )
 
     except Exception as error:
 
-        print("BOT ERROR:", error)
+        print(
+            "BOT ERROR:",
+            error
+        )
 
     finally:
 
         disconnect_mt5()
 
-        print("MT5 DISCONNECTED")
+        print(
+            "MT5 DISCONNECTED"
+        )
 
 
 if __name__ == "__main__":
