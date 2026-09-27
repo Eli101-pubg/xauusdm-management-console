@@ -87,7 +87,10 @@ def prepare_trade(
     }
 
 
-def execute_trade(trade):
+def execute_trade(
+    trade,
+    setup_key
+):
 
     required_fields = (
         "symbol",
@@ -107,6 +110,11 @@ def execute_trade(trade):
                 f"{field}"
             )
 
+    if not setup_key:
+        raise ValueError(
+            "Trade blocked: missing setup key."
+        )
+
     if trade["symbol"] != SYMBOL:
         raise ValueError(
             f"Trade blocked: only {SYMBOL} "
@@ -125,5 +133,6 @@ def execute_trade(trade):
         trade["lot"],
         trade["entry"],
         trade["stop_loss"],
-        trade["take_profit"]
+        trade["take_profit"],
+        setup_key
     )
