@@ -1,59 +1,71 @@
 from strategy import (
-    calculate_fibonacci,
-    ENTRY_LEVELS,
+calculate_fibonacci,
+ENTRY_LEVELS,
 )
 
-
 def build_signals(
-    h12_high,
-    h12_low,
-    candle_high,
-    candle_low
+h12_high,
+h12_low,
+candle_open,
+candle_high,
+candle_low,
+candle_close
 ):
-    """
-    Build ALL qualifying Fibonacci signals
-    from ONE completed H12 candle.
+"""
+Build ALL qualifying Fibonacci signals
+from ONE completed H12 candle.
 
-    Multiple touches are allowed.
-    78.6 is never an entry level.
-    """
+Multiple touches are allowed.
+78.6 is never an entry level.
 
-    fib_levels = calculate_fibonacci(
-        h12_high,
-        h12_low
+BUY:
+    M15 candle starts above the Fibonacci level
+    and touches/crosses down to it.
+
+SELL:
+    M15 candle starts below the Fibonacci level
+    and touches/crosses up to it.
+
+Candles that cross the level from both sides
+without a clear starting direction are rejected.
+"""
+
+fib_levels = calculate_fibonacci(
+    h12_high,
+    h12_low
+)
+
+signals = []
+
+for level_name in ENTRY_LEVELS:
+
+    level_price = fib_levels[level_name]
+
+    touched = (
+        candle_low <= level_price <= candle_high
     )
 
-    signals = []
+    if not touched:
+        continue
 
-    for level_name in ENTRY_LEVELS:
+    if candle_open > level_price:
 
-        level_price = fib_levels[level_name]
+        direction = "BUY"
 
-        touched = (
-            candle_low <= level_price <= candle_high
-        )
+    elif candle_open < level_price:
 
-        if not touched:
-            continue
+        direction = "SELL"
 
-        below_level = candle_low < level_price
-        above_level = candle_high > level_price
+    else:
 
-        if below_level and not above_level:
-            direction = "BUY"
+        continue
 
-        elif above_level and not below_level:
-            direction = "SELL"
+    signals.append({
+        "signal": True,
+        "direction": direction,
+        "level": level_name,
+        "price": level_price,
+        "fib_levels": fib_levels,
+    })
 
-        else:
-            continue
-
-        signals.append({
-            "signal": True,
-            "direction": direction,
-            "level": level_name,
-            "price": level_price,
-            "fib_levels": fib_levels,
-        })
-
-    return signals
+return signals
