@@ -1,4 +1,6 @@
 import time
+from datetime import datetime, timezone
+
 import MetaTrader5 as mt5
 
 from config import (
@@ -33,9 +35,12 @@ MAGIC_NUMBER = 260926
 
 def check_mt5_symbol():
 
-    symbol_info = mt5.symbol_info(SYMBOL)
+    symbol_info = mt5.symbol_info(
+        SYMBOL
+    )
 
     if symbol_info is None:
+
         raise RuntimeError(
             f"{SYMBOL} was not found in MT5."
         )
@@ -46,6 +51,7 @@ def check_mt5_symbol():
             SYMBOL,
             True
         ):
+
             raise RuntimeError(
                 f"Could not select {SYMBOL}."
             )
@@ -66,6 +72,7 @@ def print_bot_status(account):
     print("Automatic execution:", AUTO_EXECUTION)
     print("Demo only:", DEMO_ONLY)
     print("Risk per trade: $20")
+    print("SL points: 20000")
     print("Loop seconds:", LOOP_SECONDS)
     print("==============================")
     print("")
@@ -77,20 +84,53 @@ def setup_exists(setup_id):
         symbol=SYMBOL
     )
 
-    if positions is None:
+    if positions is not None:
+
+        for position in positions:
+
+            if position.magic != MAGIC_NUMBER:
+                continue
+
+            if position.symbol != SYMBOL:
+                continue
+
+            comment = str(
+                getattr(
+                    position,
+                    "comment",
+                    ""
+                )
+            )
+
+            if setup_id in comment:
+                return True
+
+    history = mt5.history_deals_get(
+        datetime(
+            2020,
+            1,
+            1,
+            tzinfo=timezone.utc
+        ),
+        datetime.now(
+            timezone.utc
+        )
+    )
+
+    if history is None:
         return False
 
-    for position in positions:
+    for deal in history:
 
-        if position.magic != MAGIC_NUMBER:
+        if deal.symbol != SYMBOL:
             continue
 
-        if position.symbol != SYMBOL:
+        if deal.magic != MAGIC_NUMBER:
             continue
 
         comment = str(
             getattr(
-                position,
+                deal,
                 "comment",
                 ""
             )
@@ -178,7 +218,7 @@ def process_m15_candle(
             )
 
             print(
-                "SETUP ALREADY TRADED:",
+                "SETUP ALREADY EXECUTED:",
                 setup_id
             )
 
@@ -201,6 +241,7 @@ def process_m15_candle(
         print("Entry level:", level)
         print("Signal entry:", entry)
         print("Risk limit: $20")
+        print("SL points: 20000")
         print("Setup ID:", setup_id)
 
         try:
@@ -275,7 +316,9 @@ def main():
 
         check_mt5_symbol()
 
-        print_bot_status(account)
+        print_bot_status(
+            account
+        )
 
         print(
             "BOT RUNNING - "
@@ -287,6 +330,7 @@ def main():
             terminal = mt5.terminal_info()
 
             if terminal is None:
+
                 raise RuntimeError(
                     "MT5 terminal connection lost."
                 )
@@ -296,6 +340,7 @@ def main():
             )
 
             if current_account is None:
+
                 raise RuntimeError(
                     "MT5 account connection lost."
                 )
